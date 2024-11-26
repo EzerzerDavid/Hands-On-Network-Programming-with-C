@@ -1,31 +1,22 @@
-/*
- * MIT License
- *
- * Copyright (c) 2018 Lewis Van Winkle
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 #include "chap09.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/x509.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #if defined(_WIN32)
 #include <conio.h>
+#include <winsock2.h>  // For socket programming on Windows
+#else
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
 
 int main(int argc, char *argv[]) {
@@ -48,7 +39,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-
     if (argc < 3) {
         fprintf(stderr, "usage: tls_client hostname port\n");
         return 1;
@@ -64,7 +54,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-
     printf("Remote address is: ");
     char address_buffer[100];
     char service_buffer[100];
@@ -73,7 +62,6 @@ int main(int argc, char *argv[]) {
             service_buffer, sizeof(service_buffer),
             NI_NUMERICHOST);
     printf("%s %s\n", address_buffer, service_buffer);
-
 
     printf("Creating socket...\n");
     SOCKET socket_peer;
@@ -84,7 +72,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-
     printf("Connecting...\n");
     if (connect(socket_peer,
                 peer_address->ai_addr, peer_address->ai_addrlen)) {
@@ -92,8 +79,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     freeaddrinfo(peer_address);
-
-
 
     SSL *ssl = SSL_new(ctx);
     if (!ssl) {
@@ -109,7 +94,6 @@ int main(int argc, char *argv[]) {
     }
 
     printf ("SSL/TLS using %s\n", SSL_get_cipher(ssl));
-
 
     X509 *cert = SSL_get_peer_certificate(ssl);
     if (!cert) {
@@ -130,13 +114,10 @@ int main(int argc, char *argv[]) {
 
     X509_free(cert);
 
-
-
     printf("Connected.\n");
     printf("To send data, enter text followed by enter.\n");
 
     while(1) {
-
         fd_set reads;
         FD_ZERO(&reads);
         FD_SET(socket_peer, &reads);
@@ -175,9 +156,7 @@ int main(int argc, char *argv[]) {
             int bytes_sent = SSL_write(ssl, read, strlen(read));
             printf("Sent %d bytes.\n", bytes_sent);
         }
-    } //end while(1)
-
-
+    } // end while(1)
 
     printf("Closing socket...\n");
     SSL_shutdown(ssl);
@@ -192,4 +171,3 @@ int main(int argc, char *argv[]) {
     printf("Finished.\n");
     return 0;
 }
-
